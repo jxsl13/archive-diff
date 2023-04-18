@@ -38,6 +38,8 @@ func init() {
 		option = "d"
 	case "-f", "--file", "--files":
 		option = "f"
+	case "":
+
 	default:
 		log.Fatalf("unknown option %q: try --directory or --file\n", option)
 	}
