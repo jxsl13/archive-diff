@@ -5,10 +5,22 @@ You can diff the contents of two folders, archives, rpm packages or and of the p
 ## Usage
 
 ```shell
-archive-diff [-d|-f] a.tar.gz b.tar.gz
+archive-diff --help
 
--d is an optional parameter that shows only a diff between the directories in the archive.
--f does only show a diff between the files and symlinks in the directory
+  DIFF_DIRS_ONLY       only compare directories (default: "false")
+  DIFF_FILES_ONLY      only compare files or symlinks (default: "false")
+  DIFF_EXCLUDE         exclude file paths matching regular expression (default: "^$")
+  DIFF_INCLUDE         include file paths matching regular expression (default: ".*")
+
+Usage:
+  archive-diff a.tar.gz b.tar.xz [flags]
+
+Flags:
+  -d, --dirs-only        only compare directories
+  -e, --exclude string   exclude file paths matching regular expression (default "^$")
+  -f, --files-only       only compare files or symlinks
+  -h, --help             help for archive-diff
+  -i, --include string   include file paths matching regular expression (default ".*")
 ```
 
 Example usage:
