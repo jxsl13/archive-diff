@@ -93,19 +93,20 @@ func (c *runContext) RunE(cmd *cobra.Command, args []string) (err error) {
 
 	wg.Wait()
 
-	added, removed, unchanged, changed := diff(sourceMap, targetMap)
+	added, removed, unchanged, changed, u, g, ui, gi := diff(sourceMap, targetMap)
+	SetOwnerFormat(len(u), len(g), len(ui), len(gi))
 
 	if len(changed) > 0 {
 		max := longestKey(changed)
 		fmt.Printf("--- changed files (%s -> %s)---\n", source, target)
 		for _, k := range sortedKeys(changed) {
 			d := changed[k]
-			fmt.Printf("changed: %-"+strconv.Itoa(max+1)+"s %s -> %s %s %s -> %s %s\n",
+			fmt.Printf("%-"+strconv.Itoa(max+1)+"s %s %12s %s -> %s %12s %s\n",
 				k,
 				d.Source.Perm(),
-				d.Target.Perm(),
 				d.Source.Mode,
 				d.Source.Owner(),
+				d.Target.Perm(),
 				d.Target.Mode,
 				d.Target.Owner(),
 			)
@@ -113,29 +114,29 @@ func (c *runContext) RunE(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	if len(added) > 0 {
-		max := longestKey(changed)
+		max := longestKey(added)
 		fmt.Printf("--- added files (%s -> %s) ---\n", source, target)
 		for _, k := range sortedKeys(added) {
 			d := added[k]
-			fmt.Printf("added: %-"+strconv.Itoa(max+1)+"s %s (%s)\n", d.Path, d.Perm(), d.Mode)
+			fmt.Printf("%-"+strconv.Itoa(max+1)+"s %s %12s %s\n", d.Path, d.Perm(), d.Mode, d.Owner())
 		}
 	}
 
 	if len(removed) > 0 {
-		max := longestKey(changed)
+		max := longestKey(removed)
 		fmt.Printf("--- removed files (%s -> %s) ---\n", source, target)
 		for _, k := range sortedKeys(removed) {
 			d := removed[k]
-			fmt.Printf("removed: %-"+strconv.Itoa(max+1)+"s %s (%s)\n", d.Path, d.Perm(), d.Mode)
+			fmt.Printf("%-"+strconv.Itoa(max+1)+"s %s %12s %s\n", d.Path, d.Perm(), d.Mode, d.Owner())
 		}
 	}
 
 	if len(unchanged) > 0 {
-		max := longestKey(changed)
+		max := longestKey(unchanged)
 		fmt.Printf("--- unchanged files (%s -> %s) ---\n", source, target)
 		for _, k := range sortedKeys(unchanged) {
 			d := unchanged[k]
-			fmt.Printf("unachanged: %-"+strconv.Itoa(max+1)+"s %s (%s)\n", d.Path, d.Perm(), d.Mode)
+			fmt.Printf("%-"+strconv.Itoa(max+1)+"s %s %12s %s\n", d.Path, d.Perm(), d.Mode, d.Owner())
 		}
 	}
 
@@ -182,11 +183,37 @@ func readArchive(option string, root string, include, exclude *regexp.Regexp, ou
 	})
 }
 
-func diff(source, target map[string]File) (added, removed, unchanged map[string]File, changed map[string]Diff) {
+func diff(source, target map[string]File) (added, removed, unchanged map[string]File, changed map[string]Diff, longestUser, longestGroup, longestUid, longestGid string) {
 	added, removed, unchanged = make(map[string]File, 64), make(map[string]File, 64), make(map[string]File, 64)
 	changed = make(map[string]Diff, 64)
 
+	var (
+		maxUser  []rune
+		maxGroup []rune
+		maxUid   []rune
+		maxGid   []rune
+	)
+
 	for t, tf := range target {
+		var (
+			user  = []rune(tf.Username)
+			group = []rune(tf.Groupname)
+			uid   = []rune(strconv.FormatUint(uint64(tf.Uid), 10))
+			gid   = []rune(strconv.FormatUint(uint64(tf.Gid), 10))
+		)
+		if len(user) > len(maxUser) {
+			maxUser = user
+		}
+		if len(group) > len(maxGroup) {
+			maxGroup = group
+		}
+		if len(uid) > len(maxUid) {
+			maxUid = uid
+		}
+		if len(gid) > len(maxGid) {
+			maxGid = gid
+		}
+
 		sf, found := source[t]
 		if !found {
 			added[t] = tf
@@ -203,13 +230,31 @@ func diff(source, target map[string]File) (added, removed, unchanged map[string]
 	}
 
 	for s, sf := range source {
+		var (
+			uid   = []rune(strconv.FormatUint(uint64(sf.Uid), 10))
+			gid   = []rune(strconv.FormatUint(uint64(sf.Gid), 10))
+			user  = []rune(sf.Username)
+			group = []rune(sf.Groupname)
+		)
+		if len(user) > len(maxUser) {
+			maxUser = user
+		}
+		if len(group) > len(maxGroup) {
+			maxGroup = group
+		}
+		if len(uid) > len(maxUid) {
+			maxUid = uid
+		}
+		if len(gid) > len(maxGid) {
+			maxGid = gid
+		}
 		_, found := target[s]
 		if !found {
 			removed[s] = sf
 		}
 	}
 
-	return added, removed, unchanged, changed
+	return added, removed, unchanged, changed, string(maxUser), string(maxGroup), string(maxUid), string(maxGid)
 }
 
 func sortedKeys[V any](m map[string]V) []string {

@@ -15,8 +15,14 @@ type File struct {
 	Gid       int
 }
 
+var ownerFormat = "%s:%s (%d:%d)"
+
+func SetOwnerFormat(maxUser, maxGroup, maxUid, maxGid int) {
+	ownerFormat = fmt.Sprintf("%%%ds:%%-%ds (%%%dd:%%-%dd)", maxUser, maxGroup, maxUid, maxGid)
+}
+
 func (f File) Owner() string {
-	return fmt.Sprintf("%s:%s (%d:%d)", f.Username, f.Groupname, f.Uid, f.Gid)
+	return fmt.Sprintf(ownerFormat, f.Username, f.Groupname, f.Uid, f.Gid)
 }
 
 func (f File) Perm() string {
