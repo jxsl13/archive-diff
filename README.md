@@ -42,9 +42,3 @@ Example usage:
 ```shell
 archive-diff -d whatever-1.0.0-1.noarch.rpm whatever.tar.gz > archive.diff
 ```
-
-### Installation
-
-```
-go install github.com/jxsl13/archive-diff@latest
-```
