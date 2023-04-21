@@ -9,8 +9,14 @@ type File struct {
 	Path string
 	Mode fs.FileMode
 
-	Uid int
-	Gid int
+	Username  string
+	Groupname string
+	Uid       int
+	Gid       int
+}
+
+func (f File) Owner() string {
+	return fmt.Sprintf("%s:%s (%d:%d)", f.Username, f.Groupname, f.Uid, f.Gid)
 }
 
 func (f File) Perm() string {
