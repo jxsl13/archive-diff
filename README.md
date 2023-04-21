@@ -2,13 +2,26 @@
 
 You can diff the contents of two folders, archives, rpm packages or and of the previous combinations.
 
-## Usage
+## Installation
 
 ```shell
-archive-diff --help
+go install github.com/jxsl13/archive-diff@latest
+```
+
+Bleeding edge:
+```shell
+go install github.com/jxsl13/archive-diff@main
+```
+
+## Usage
+
+```text
+$ archive-diff --help
 
   DIFF_DIRS_ONLY       only compare directories (default: "false")
   DIFF_FILES_ONLY      only compare files or symlinks (default: "false")
+  DIFF_PERM_ONLY       only compare file permissions and sticky bit (default: "false")
+  DIFF_OWNER_ONLY      only compare owner, group, gid and uid (default: "false")
   DIFF_EXCLUDE         exclude file paths matching regular expression (default: "^$")
   DIFF_INCLUDE         include file paths matching regular expression (default: ".*")
 
@@ -21,6 +34,8 @@ Flags:
   -f, --files-only       only compare files or symlinks
   -h, --help             help for archive-diff
   -i, --include string   include file paths matching regular expression (default ".*")
+  -o, --owner-only       only compare owner, group, gid and uid
+  -p, --perm-only        only compare file permissions and sticky bit
 ```
 
 Example usage:
