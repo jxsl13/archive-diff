@@ -27,6 +27,11 @@ $ archive-diff --help
 
 Usage:
   archive-diff a.tar.gz b.tar.xz [flags]
+  archive-diff [command]
+
+Available Commands:
+  completion  Generate completion script
+  help        Help about any command
 
 Flags:
   -d, --dirs-only        only compare directories
@@ -36,6 +41,8 @@ Flags:
   -i, --include string   include file paths matching regular expression (default ".*")
   -o, --owner-only       only compare owner, group, gid and uid
   -p, --perm-only        only compare file permissions and sticky bit
+
+Use "archive-diff [command] --help" for more information about a command.
 ```
 
 Example usage:
