@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -18,33 +19,94 @@ import (
 )
 
 func main() {
-	NewRunCmd().Execute()
+	NewRootCmd().Execute()
 }
 
-func NewRunCmd() *cobra.Command {
-	runContext := runContext{}
+func NewRootCmd() *cobra.Command {
+	rootContext := rootContext{}
 
-	// runCmd represents the run command
-	runCmd := &cobra.Command{
+	// rootCmd represents the run command
+	rootCmd := &cobra.Command{
 		Use:   "archive-diff a.tar.gz b.tar.xz",
 		Short: "diff two archives, folders or a rpm packages and any of the previous",
 		Args:  cobra.ExactArgs(2),
-		RunE:  runContext.RunE,
+		RunE:  rootContext.RunE,
 	}
 
 	// register flags but defer parsing and validation of the final values
-	runCmd.PreRunE = runContext.PreRunE(runCmd)
+	rootCmd.PreRunE = rootContext.PreRunE(rootCmd)
 
-	return runCmd
+	completionCmd := &cobra.Command{
+		Use:   "completion [bash|zsh|fish|powershell]",
+		Short: "Generate completion script",
+		Long: fmt.Sprintf(`To load completions:
+
+	Bash:
+
+	  $ source <(%[1]s completion bash)
+
+	  # To load completions for each session, execute once:
+	  # Linux:
+	  $ %[1]s completion bash > /etc/bash_completion.d/%[1]s
+	  # macOS:
+	  $ %[1]s completion bash > $(brew --prefix)/etc/bash_completion.d/%[1]s
+
+	Zsh:
+
+	  # If shell completion is not already enabled in your environment,
+	  # you will need to enable it.  You can execute the following once:
+
+	  $ echo "autoload -U compinit; compinit" >> ~/.zshrc
+
+	  # To load completions for each session, execute once:
+	  $ %[1]s completion zsh > "${fpath[1]}/_%[1]s"
+
+	  # You will need to start a new shell for this setup to take effect.
+
+	fish:
+
+	  $ %[1]s completion fish | source
+
+	  # To load completions for each session, execute once:
+	  $ %[1]s completion fish > ~/.config/fish/completions/%[1]s.fish
+
+	PowerShell:
+
+	  PS> %[1]s completion powershell | Out-String | Invoke-Expression
+
+	  # To load completions for every new session, run:
+	  PS> %[1]s completion powershell > %[1]s.ps1
+	  # and source this file from your PowerShell profile.
+	`, rootCmd.Root().Name()),
+		DisableFlagsInUseLine: true,
+		ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
+		Args:                  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
+		Run: func(cmd *cobra.Command, args []string) {
+			switch args[0] {
+			case "bash":
+				cmd.Root().GenBashCompletion(os.Stdout)
+			case "zsh":
+				cmd.Root().GenZshCompletion(os.Stdout)
+			case "fish":
+				cmd.Root().GenFishCompletion(os.Stdout, true)
+			case "powershell":
+				cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
+			}
+		},
+	}
+
+	rootCmd.AddCommand(completionCmd)
+
+	return rootCmd
 }
 
-type runContext struct {
+type rootContext struct {
 	Config     *config.Config
 	SourcePath string
 	TargetPath string
 }
 
-func (c *runContext) PreRunE(cmd *cobra.Command) func(cmd *cobra.Command, args []string) error {
+func (c *rootContext) PreRunE(cmd *cobra.Command) func(cmd *cobra.Command, args []string) error {
 	c.Config = &config.Config{
 		DirsOnly:  false,
 		FilesOnly: false,
@@ -75,7 +137,7 @@ func (c *runContext) PreRunE(cmd *cobra.Command) func(cmd *cobra.Command, args [
 	}
 }
 
-func (c *runContext) RunE(cmd *cobra.Command, args []string) (err error) {
+func (c *rootContext) RunE(cmd *cobra.Command, args []string) (err error) {
 	sourceMap, targetMap := make(map[string]model.File, 1024), make(map[string]model.File, 1024)
 	source, target := c.SourcePath, c.TargetPath
 	include, exclude := c.Config.IncludeRegex, c.Config.ExcludeRegex
