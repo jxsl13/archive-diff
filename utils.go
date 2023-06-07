@@ -94,7 +94,7 @@ func Groupname(fi os.FileInfo) string {
 		gidStr := strconv.FormatUint(uint64(stat.Gid), 10)
 		if user, err := user.LookupId(gidStr); err == nil {
 			gmu.Lock()
-			userCache[stat.Uid] = user.Name
+			userCache[stat.Uid] = user.Username
 			gmu.Unlock()
 		}
 		return ""
