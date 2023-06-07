@@ -45,7 +45,7 @@ func Username(fi os.FileInfo) string {
 		uidStr := strconv.FormatUint(uint64(stat.Uid), 10)
 		if user, err := user.LookupId(uidStr); err == nil {
 			umu.Lock()
-			userCache[stat.Uid] = user.Name
+			userCache[stat.Uid] = user.Username
 			umu.Unlock()
 		}
 		return ""
