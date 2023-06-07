@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/knadh/koanf/maps"
+	"github.com/knadh/koanf/parsers/dotenv"
 	"github.com/knadh/koanf/providers/confmap"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/posflag"
@@ -121,7 +122,7 @@ func RegisterFlags[T any](config *T, persistent bool, app *cobra.Command, option
 		field := ct.Field(i)
 		sTag := field.Tag
 		key, found := sTag.Lookup(op.tag)
-		if !found {
+		if !found || key == "-" {
 			continue
 		}
 		v := defaultMap[key]
@@ -261,4 +262,46 @@ func maxKeyLen(m map[string]any) int {
 	}
 
 	return maxLen
+}
+
+type dotEnvParseOption struct {
+	envPrefix string
+	delimiter string
+	tag       string
+	flatPaths bool
+}
+
+func MarshalDotEnv(cfgs ...any) ([]byte, error) {
+	op := dotEnvParseOption{
+		envPrefix: "DIFF_",
+		delimiter: ".",
+		tag:       "koanf",
+		flatPaths: true,
+	}
+
+	k := koanf.New(op.delimiter)
+
+	for _, cfg := range cfgs {
+		err := k.Load(structs.ProviderWithDelim(cfg, op.tag, op.delimiter), nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	koanfToEnv := func(s string) string {
+		return op.envPrefix + strings.ToUpper(strings.ReplaceAll(s, op.delimiter, "_"))
+	}
+
+	m, _ := maps.Flatten(k.All(), nil, op.delimiter)
+
+	for key, value := range m {
+		k.Delete(key)
+		err := k.Set(koanfToEnv(key), value)
+		if err != nil {
+			return nil, fmt.Errorf("failed to set key %s: %w", key, err)
+		}
+	}
+
+	dotEnv := dotenv.ParserEnv(op.envPrefix, op.delimiter, func(s string) string { return s })
+	return k.Marshal(dotEnv)
 }

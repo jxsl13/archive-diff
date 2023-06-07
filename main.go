@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unicode"
 
 	"github.com/jxsl13/archive-diff/archive"
 	"github.com/jxsl13/archive-diff/config"
@@ -102,8 +103,8 @@ func NewRootCmd() *cobra.Command {
 
 type rootContext struct {
 	Config     *config.Config
-	SourcePath string
-	TargetPath string
+	SourcePath string `koanf:"src.path" short:"d" description:"source file or directory"`
+	TargetPath string `koanf:"dst.path" short:"d" description:"target file or directory"`
 }
 
 func (c *rootContext) PreRunE(cmd *cobra.Command) func(cmd *cobra.Command, args []string) error {
@@ -141,6 +142,12 @@ func (c *rootContext) RunE(cmd *cobra.Command, args []string) (err error) {
 	sourceMap, targetMap := make(map[string]model.File, 1024), make(map[string]model.File, 1024)
 	source, target := c.SourcePath, c.TargetPath
 	include, exclude := c.Config.IncludeRegex, c.Config.ExcludeRegex
+
+	configData, err := config.MarshalDotEnv(c)
+	if err != nil {
+		return fmt.Errorf("failed to marshal app configuration: %w", err)
+	}
+	fmt.Println(strings.TrimRightFunc(string(configData), unicode.IsSpace) + "\n")
 
 	var wg sync.WaitGroup
 	wg.Add(2)

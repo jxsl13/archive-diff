@@ -15,10 +15,10 @@ type Config struct {
 	Exclude   string `koanf:"exclude" short:"e" description:"exclude file paths matching regular expression"`
 	Include   string `koanf:"include" short:"i" description:"include file paths matching regular expression"`
 
-	FileOption   string
-	Equal        func(a, b model.File) bool
-	ExcludeRegex *regexp.Regexp
-	IncludeRegex *regexp.Regexp
+	FileOption   string                     `koanf:"-"`
+	Equal        func(a, b model.File) bool `koanf:"-"`
+	ExcludeRegex *regexp.Regexp             `koanf:"-"`
+	IncludeRegex *regexp.Regexp             `koanf:"-"`
 }
 
 func (c *Config) Validate() error {
