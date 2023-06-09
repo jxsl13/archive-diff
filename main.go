@@ -113,6 +113,7 @@ func (c *rootContext) PreRunE(cmd *cobra.Command) func(cmd *cobra.Command, args 
 		FilesOnly: false,
 		Exclude:   "^$",
 		Include:   ".*",
+		Cut:       "^$",
 	}
 
 	runParser := config.RegisterFlags(c.Config, true, cmd)
@@ -141,7 +142,7 @@ func (c *rootContext) PreRunE(cmd *cobra.Command) func(cmd *cobra.Command, args 
 func (c *rootContext) RunE(cmd *cobra.Command, args []string) (err error) {
 	sourceMap, targetMap := make(map[string]model.File, 1024), make(map[string]model.File, 1024)
 	source, target := c.SourcePath, c.TargetPath
-	include, exclude := c.Config.IncludeRegex, c.Config.ExcludeRegex
+	include, exclude, cut := c.Config.IncludeRegex, c.Config.ExcludeRegex, c.Config.CutRegex
 
 	configData, err := config.MarshalDotEnv(c)
 	if err != nil {
@@ -153,12 +154,12 @@ func (c *rootContext) RunE(cmd *cobra.Command, args []string) (err error) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		checkErr(readArchive(c.Config.FileOption, source, include, exclude, sourceMap))
+		checkErr(readArchive(c.Config.FileOption, source, include, exclude, cut, sourceMap))
 	}()
 
 	go func() {
 		defer wg.Done()
-		checkErr(readArchive(c.Config.FileOption, target, include, exclude, targetMap))
+		checkErr(readArchive(c.Config.FileOption, target, include, exclude, cut, targetMap))
 	}()
 
 	wg.Wait()
@@ -213,7 +214,7 @@ func (c *rootContext) RunE(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func readArchive(fileOption string, root string, include, exclude *regexp.Regexp, out map[string]model.File) error {
+func readArchive(fileOption string, root string, include, exclude, cut *regexp.Regexp, out map[string]model.File) error {
 	return archive.Walk(root, func(path string, info fs.FileInfo, _ io.ReaderAt, err error) error {
 		if err != nil {
 			return fmt.Errorf("failed to process file: %s: %w", path, err)
@@ -228,6 +229,12 @@ func readArchive(fileOption string, root string, include, exclude *regexp.Regexp
 			if !info.IsDir() {
 				return nil
 			}
+		}
+		switch cut.String() {
+		case "", "^$":
+			// nothing to replace
+		default:
+			path = cut.ReplaceAllString(path, "")
 		}
 
 		if !include.MatchString(path) {
