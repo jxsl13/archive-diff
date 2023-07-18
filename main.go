@@ -248,6 +248,11 @@ func readArchive(fileOption string, root string, include, exclude, cut *regexp.R
 		path = strings.TrimPrefix(path, root)
 		path = strings.TrimPrefix(path, "/")
 
+		if path == "" {
+			// skip empty file path
+			return nil
+		}
+
 		out[path] = model.File{
 			Path: path,
 			Mode: info.Mode(),
