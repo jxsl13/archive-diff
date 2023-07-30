@@ -1,6 +1,6 @@
 # archive-diff
 
-You can diff the contents of two folders, archives, rpm packages or and of the previous combinations.
+You can diff the contents of two folders, archives, rpm packages or any of the previous combinations.
 
 ## Installation
 
