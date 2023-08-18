@@ -35,7 +35,14 @@ func WalkTar(file io.Reader, walkFunc WalkFunc) error {
 		fi := header.FileInfo()
 
 		switch header.Typeflag {
-		// skip symlinks
+		case tar.TypeLink:
+			src := path.Clean(header.Name)
+			dst := header.Linkname
+			err = walkFunc(src, fi, strings.NewReader(dst), nil)
+			if err != nil {
+				return err
+			}
+			continue
 		case tar.TypeSymlink:
 			err = walkFunc(path.Clean(header.Name), fi, strings.NewReader(header.Linkname), nil)
 			if err != nil {
